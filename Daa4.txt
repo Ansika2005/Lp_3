@@ -1,0 +1,96 @@
+import java.util.Scanner;
+
+public class Knapsack01 {
+
+    public static void main(String[] args) {
+
+        Scanner sc = new Scanner(System.in);
+
+        System.out.print("Enter number of items: ");
+        int n = sc.nextInt();
+
+        int[] weight = new int[n];
+        int[] profit = new int[n];
+
+        System.out.println("Enter weight and price of each item:");
+
+        for (int i = 0; i < n; i++) {
+            System.out.print("Item " + (i + 1) + " weight: ");
+            weight[i] = sc.nextInt();
+
+            System.out.print("Item " + (i + 1) + " price: ");
+            profit[i] = sc.nextInt();
+        }
+
+        System.out.print("Enter knapsack capacity: ");
+        int capacity = sc.nextInt();
+
+        
+        System.out.println("\nWeight-Price Matrix:");
+        System.out.println("Item\tWeight\tPrice");
+
+        for (int i = 0; i < n; i++) {
+            System.out.println((i + 1) + "\t" + weight[i] + "\t" + profit[i]);
+        }
+
+    
+        int[][] dp = new int[n + 1][capacity + 1];
+
+        for (int i = 1; i <= n; i++) {
+            for (int w = 0; w <= capacity; w++) {
+
+                if (weight[i - 1] <= w) {
+                    dp[i][w] = Math.max(
+                        profit[i - 1] + dp[i - 1][w - weight[i - 1]],
+                        dp[i - 1][w]
+                    );
+                } else {
+                    dp[i][w] = dp[i - 1][w];
+                }
+            }
+        }
+
+        // Display DP Table
+        System.out.println("\nDynamic Programming Table:");
+
+        System.out.print("Item\\Capacity\t");
+
+        for (int w = 0; w <= capacity; w++) {
+            System.out.print(w + "\t");
+        }
+
+        System.out.println();
+
+        for (int i = 0; i <= n; i++) {
+            System.out.print(i + "\t\t");
+
+            for (int w = 0; w <= capacity; w++) {
+                System.out.print(dp[i][w] + "\t");
+            }
+
+            System.out.println();
+        }
+
+        // Display Maximum Profit
+        System.out.println("\nMaximum Profit: " + dp[n][capacity]);
+
+        // Find Selected Items
+        System.out.println("Selected Items:");
+
+        int w = capacity;
+
+        for (int i = n; i > 0; i--) {
+            if (dp[i][w] != dp[i - 1][w]) {
+                System.out.println(
+                    "Item " + i +
+                    " (Weight: " + weight[i - 1] +
+                    ", Price: " + profit[i - 1] + ")"
+                );
+
+                w -= weight[i - 1];
+            }
+        }
+
+        sc.close();
+    }
+}

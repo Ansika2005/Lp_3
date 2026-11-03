@@ -1,65 +1,206 @@
+import java.util.*; 
 
-import java.util.*;
+ 
 
-public class Huffman {
+public class HuffmanEncoding { 
 
-    static void printCodes(Node root, String code) {
-        if (root == null)
-            return;
+ 
 
-        if (root.left == null && root.right == null) {
-            System.out.println(root.ch + " : " + code);
-            return;
-        }
+    static class Node { 
 
-        printCodes(root.left, code + "0");
-        printCodes(root.right, code + "1");
-    }
+        char character; 
 
-    public static void main(String[] args) {
-        char[] ch = {'A', 'B', 'C', 'D', 'E', 'F'};
-        int[] freq = {5, 9, 12, 13, 16, 45};
+        int frequency; 
 
-        PriorityQueue<Node> pq = new PriorityQueue<>(
-            (a, b) -> a.freq - b.freq
-        );
+        Node left, right; 
 
-        for (int i = 0; i < ch.length; i++) {
-            pq.add(new Node(ch[i], freq[i]));
-        }
+ 
 
-        while (pq.size() > 1) {
-            Node left = pq.poll();
-            Node right = pq.poll();
+        Node(char character, int frequency) { 
 
-            Node parent = new Node(
-                left.freq + right.freq, left, right
-            );
+            this.character = character; 
 
-            pq.add(parent);
-        }
+            this.frequency = frequency; 
 
-        Node root = pq.poll();
+        } 
 
-        System.out.println("Huffman Codes:");
-        printCodes(root, "");
-    }
-}
-class Node {
-    char ch;
-    int freq;
-    Node left, right;
+    } 
 
-    Node(char ch, int freq) {
-        this.ch = ch;
-        this.freq = freq;
-    }
+ 
 
-    Node(int freq, Node left, Node right) {
-        this.ch = '-';
-        this.freq = freq;
-        this.left = left;
-        this.right = right;
-    }
-}
+    // Comparator for Min Heap 
+
+    static class NodeComparator implements Comparator<Node> { 
+
+        public int compare(Node a, Node b) { 
+
+            return Integer.compare(a.frequency, b.frequency); 
+
+        } 
+
+    } 
+
+ 
+
+    // Generate Huffman Codes 
+
+    static void generateCodes(Node root, String code) { 
+
+        if (root == null) 
+
+            return; 
+
+ 
+
+        if (root.left == null && root.right == null) { 
+
+            System.out.println(root.character + " : " + code); 
+
+            return; 
+
+        } 
+
+ 
+
+        generateCodes(root.left, code + "0"); 
+
+        generateCodes(root.right, code + "1"); 
+
+    } 
+
+ 
+
+    public static void main(String[] args) { 
+
+ 
+
+        Scanner sc = new Scanner(System.in); 
+
+ 
+
+        System.out.print("Enter a string: "); 
+
+        String str = sc.nextLine(); 
+
+ 
+
+        // Calculate character frequencies 
+
+        int[] frequency = new int[256]; 
+
+ 
+
+        for (char ch : str.toCharArray()) { 
+
+            if (ch < 256) { 
+
+                frequency[ch]++; 
+
+            } 
+
+        } 
+
+ 
+
+        // Print frequency array 
+
+        System.out.println("\nCharacter Frequency Array:"); 
+
+ 
+
+        for (int i = 0; i < 256; i++) { 
+
+            if (frequency[i] > 0) { 
+
+                System.out.println((char) i + " : " + frequency[i]); 
+
+            } 
+
+        } 
+
+ 
+
+        // Create Min Heap 
+
+        PriorityQueue<Node> minHeap = 
+
+                new PriorityQueue<>(new NodeComparator()); 
+
+ 
+
+        for (int i = 0; i < 256; i++) { 
+
+            if (frequency[i] > 0) { 
+
+                minHeap.add(new Node((char) i, frequency[i])); 
+
+            } 
+
+        } 
+
+ 
+
+        // Build Huffman Tree 
+
+        while (minHeap.size() > 1) { 
+
+ 
+
+            Node left = minHeap.poll(); 
+
+            Node right = minHeap.poll(); 
+
+ 
+
+            Node newNode = new Node( 
+
+                    '\0', left.frequency + right.frequency); 
+
+ 
+
+            newNode.left = left; 
+
+            newNode.right = right; 
+
+ 
+
+            minHeap.add(newNode); 
+
+        } 
+
+ 
+
+        // Get root of Huffman Tree 
+
+        Node root = minHeap.poll(); 
+
+ 
+
+        // Print Huffman Codes 
+
+        System.out.println("\nHuffman Codes:"); 
+
+ 
+
+        if (root != null) { 
+
+            if (root.left == null && root.right == null) { 
+
+                System.out.println(root.character + " : 0"); 
+
+            } else { 
+
+                generateCodes(root, ""); 
+
+            } 
+
+        } 
+
+ 
+
+        sc.close(); 
+
+    } 
+
+} 
 

@@ -1,0 +1,61 @@
+
+def print_board(board, n):
+    for i in range(n):
+        for j in range(n):
+            print("Q" if board[i][j] == 1 else ".", end=" ")
+        print()
+
+def is_safe(board, row, col, n):
+
+    # Check upper-left diagonal
+    for i, j in zip(range(row, -1, -1),
+                     range(col, -1, -1)):
+        if board[i][j] == 1:
+            return False
+
+    # Check lower-left diagonal
+    for i, j in zip(range(row, n),
+                     range(col, -1, -1)):
+        if board[i][j] == 1:
+            return False
+
+    # Check same column on left
+    for j in range(col - 1, -1, -1):
+        if board[row][j] == 1:
+            return False
+
+    return True
+
+def solve_nqueens(board, col, n):
+
+    # All queens are placed
+    if col >= n:
+        return True
+
+    # Try placing queen in each row
+    for row in range(n):
+
+        if is_safe(board, row, col, n):
+
+            board[row][col] = 1
+
+            if solve_nqueens(board, col + 1, n):
+                return True
+
+            # Backtracking
+            board[row][col] = 0
+
+    return False
+
+n = int(input("Enter the value of N: "))
+
+board = [[0 for _ in range(n)] for _ in range(n)]
+
+# First queen is fixed at row 0, column 0
+board[0][0] = 1
+
+if solve_nqueens(board, 1, n):
+    print("\nFinal N-Queens Matrix:")
+    print_board(board, n)
+else:
+    print("Solution does not exist with first Queen at (0, 0)")

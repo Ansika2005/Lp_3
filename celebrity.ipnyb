@@ -1,0 +1,368 @@
+import os
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+import tensorflow as tf
+
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import (
+    Conv2D, MaxPooling2D, Flatten,
+    Dense, Dropout, BatchNormalization
+)
+
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from tensorflow.keras.callbacks import EarlyStopping
+
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import confusion_matrix
+from sklearn.metrics import classification_report
+
+
+# 2. Read Dataset
+
+dataset_path = "Celebrity-Faces-Dataset"
+
+IMG_SIZE = 128
+BATCH_SIZE = 32
+
+print("Celebrity Folders:")
+
+for folder in os.listdir(dataset_path):
+    print(folder)
+
+
+# 3. Split Dataset and Normalize Images
+
+datagen = ImageDataGenerator(
+    rescale=1.0/255,
+    validation_split=0.2
+)
+
+train_data = datagen.flow_from_directory(
+    dataset_path,
+    target_size=(IMG_SIZE, IMG_SIZE),
+    batch_size=BATCH_SIZE,
+    class_mode='categorical',
+    subset='training',
+    shuffle=True,
+    seed=42
+)
+
+test_data = datagen.flow_from_directory(
+    dataset_path,
+    target_size=(IMG_SIZE, IMG_SIZE),
+    batch_size=BATCH_SIZE,
+    class_mode='categorical',
+    subset='validation',
+    shuffle=False,
+    seed=42
+)
+
+print("\nTraining Images:", train_data.samples)
+print("Testing Images:", test_data.samples)
+print("Number of Classes:", train_data.num_classes)
+print("Celebrity Classes:", train_data.class_indices)
+
+
+# 4. Display Sample Images
+
+images, labels = next(train_data)
+
+plt.figure(figsize=(10, 6))
+
+for i in range(min(6, len(images))):
+    plt.subplot(2, 3, i+1)
+    plt.imshow(images[i])
+
+    label = np.argmax(labels[i])
+
+    class_name = list(train_data.class_indices.keys())[label]
+
+    plt.title(class_name)
+    plt.axis('off')
+
+plt.tight_layout()
+plt.show()
+
+
+# 5. Initial CNN Model
+
+model = Sequential()
+
+model.add(Conv2D(
+    32, (3, 3),
+    activation='relu',
+    input_shape=(128, 128, 3)
+))
+
+model.add(MaxPooling2D((2, 2)))
+
+model.add(Conv2D(
+    64, (3, 3),
+    activation='relu'
+))
+
+model.add(MaxPooling2D((2, 2)))
+
+model.add(Flatten())
+
+model.add(Dense(128, activation='relu'))
+
+model.add(Dense(
+    train_data.num_classes,
+    activation='softmax'
+))
+
+model.compile(
+    optimizer='adam',
+    loss='categorical_crossentropy',
+    metrics=['accuracy']
+)
+
+print("\nInitial CNN Model Summary:")
+model.summary()
+
+
+# 6. Train Initial Model
+
+print("\nTraining Initial CNN Model...")
+
+model.fit(
+    train_data,
+    epochs=10,
+    validation_data=test_data
+)
+
+loss, initial_accuracy = model.evaluate(test_data)
+
+print("\nInitial Model Accuracy:",
+      initial_accuracy * 100, "%")
+
+
+# 7. Improved CNN Model Using Data Augmentation
+
+improved_datagen = ImageDataGenerator(
+    rescale=1.0/255,
+    rotation_range=20,
+    zoom_range=0.2,
+    width_shift_range=0.2,
+    height_shift_range=0.2,
+    horizontal_flip=True,
+    validation_split=0.2
+)
+
+train_data_improved = improved_datagen.flow_from_directory(
+    dataset_path,
+    target_size=(128, 128),
+    batch_size=32,
+    class_mode='categorical',
+    subset='training',
+    shuffle=True,
+    seed=42
+)
+
+test_data_improved = ImageDataGenerator(
+    rescale=1.0/255,
+    validation_split=0.2
+).flow_from_directory(
+    dataset_path,
+    target_size=(128, 128),
+    batch_size=32,
+    class_mode='categorical',
+    subset='validation',
+    shuffle=False,
+    seed=42
+)
+
+
+# 8. Build Improved CNN
+
+improved_model = Sequential()
+
+# First Convolution Layer
+improved_model.add(Conv2D(
+    32, (3, 3),
+    activation='relu',
+    input_shape=(128, 128, 3)
+))
+
+improved_model.add(BatchNormalization())
+improved_model.add(MaxPooling2D((2, 2)))
+
+# Second Convolution Layer
+improved_model.add(Conv2D(
+    64, (3, 3),
+    activation='relu'
+))
+
+improved_model.add(BatchNormalization())
+improved_model.add(MaxPooling2D((2, 2)))
+
+# Third Convolution Layer
+improved_model.add(Conv2D(
+    128, (3, 3),
+    activation='relu'
+))
+
+improved_model.add(BatchNormalization())
+improved_model.add(MaxPooling2D((2, 2)))
+
+# Flatten Layer
+improved_model.add(Flatten())
+
+# Fully Connected Layer
+improved_model.add(Dense(128, activation='relu'))
+
+# Dropout Layer
+improved_model.add(Dropout(0.5))
+
+# Output Layer
+improved_model.add(Dense(
+    train_data_improved.num_classes,
+    activation='softmax'
+))
+
+
+# 9. Compile Improved Model
+
+improved_model.compile(
+    optimizer='adam',
+    loss='categorical_crossentropy',
+    metrics=['accuracy']
+)
+
+print("\nImproved CNN Model Summary:")
+improved_model.summary()
+
+
+# 10. Early Stopping
+
+early_stop = EarlyStopping(
+    monitor='val_loss',
+    patience=3,
+    restore_best_weights=True
+)
+
+
+# 11. Train Improved Model
+
+print("\nTraining Improved CNN Model...")
+
+history = improved_model.fit(
+    train_data_improved,
+    epochs=20,
+    validation_data=test_data_improved,
+    callbacks=[early_stop]
+)
+
+
+# 12. Evaluate Improved Model
+
+loss, improved_accuracy = improved_model.evaluate(
+    test_data_improved
+)
+
+print("\nInitial CNN Accuracy:",
+      initial_accuracy * 100, "%")
+
+print("Improved CNN Accuracy:",
+      improved_accuracy * 100, "%")
+
+
+# 13. Predict Test Images
+
+test_data_improved.reset()
+
+predictions = improved_model.predict(test_data_improved)
+
+y_pred = np.argmax(predictions, axis=1)
+
+y_true = test_data_improved.classes
+
+
+# 14. Accuracy Score
+
+accuracy = accuracy_score(y_true, y_pred)
+
+print("\nFinal Accuracy Score:", accuracy)
+
+print("Final Accuracy Percentage:",
+      accuracy * 100, "%")
+
+
+# 15. Confusion Matrix
+
+cm = confusion_matrix(y_true, y_pred)
+
+print("\nConfusion Matrix:")
+print(cm)
+
+
+# 16. Plot Confusion Matrix
+
+class_names = list(
+    test_data_improved.class_indices.keys()
+)
+
+plt.figure(figsize=(10, 8))
+
+sns.heatmap(
+    cm,
+    annot=True,
+    fmt='d',
+    cmap='Blues',
+    xticklabels=class_names,
+    yticklabels=class_names
+)
+
+plt.xlabel("Predicted Labels")
+plt.ylabel("Actual Labels")
+plt.title("Celebrity Face Classifier - Confusion Matrix")
+
+plt.show()
+
+
+# 17. Classification Report
+
+print("\nClassification Report:")
+
+print(classification_report(
+    y_true,
+    y_pred,
+    target_names=class_names,
+    zero_division=0
+))
+
+
+# 18. Plot Training and Validation Accuracy
+
+plt.figure(figsize=(8, 5))
+
+plt.plot(history.history['accuracy'], label='Training Accuracy')
+
+plt.plot(history.history['val_accuracy'], label='Validation Accuracy')
+
+plt.xlabel("Epochs")
+plt.ylabel("Accuracy")
+plt.title("CNN Training vs Validation Accuracy")
+
+plt.legend()
+plt.show()
+
+
+# 19. Plot Training and Validation Loss
+
+plt.figure(figsize=(8, 5))
+
+plt.plot(history.history['loss'], label='Training Loss')
+
+plt.plot(history.history['val_loss'], label='Validation Loss')
+
+plt.xlabel("Epochs")
+plt.ylabel("Loss")
+plt.title("CNN Training vs Validation Loss")
+
+plt.legend()
+plt.show()
+
+print("\nCelebrity Face Classification Completed Successfully!")

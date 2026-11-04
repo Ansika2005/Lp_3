@@ -1,0 +1,90 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.metrics import confusion_matrix
+from sklearn.metrics import accuracy_score, precision_score, recall_score
+
+# Step 1: Read Dataset
+df = pd.read_csv("diabetes.csv")
+
+print("Dataset Shape:", df.shape)
+print("\nFirst 5 rows:")
+print(df.head())
+
+# Step 2: Separate Features and Target
+X = df.drop("Outcome", axis=1)
+y = df["Outcome"]
+
+# Step 3: Split Dataset
+X_train, X_test, y_train, y_test = train_test_split(
+    X,
+    y,
+    test_size=0.20,
+    random_state=42,
+    stratify=y
+)
+
+print("\nTraining data:", X_train.shape)
+print("Testing data:", X_test.shape)
+
+# Step 4: Normalize Data
+scaler = StandardScaler()
+
+X_train = scaler.fit_transform(X_train)
+X_test = scaler.transform(X_test)
+
+# Step 5: Create KNN Model
+knn = KNeighborsClassifier(n_neighbors=5)
+
+# Step 6: Train Model
+knn.fit(X_train, y_train)
+
+# Step 7: Prediction
+y_pred = knn.predict(X_test)
+
+# Step 8: Confusion Matrix
+cm = confusion_matrix(y_test, y_pred)
+
+print("\nConfusion Matrix:")
+print(cm)
+
+# Step 9: Accuracy
+accuracy = accuracy_score(y_test, y_pred)
+
+# Step 10: Error Rate
+error_rate = 1 - accuracy
+
+# Step 11: Precision
+precision = precision_score(y_test, y_pred)
+
+# Step 12: Recall
+recall = recall_score(y_test, y_pred)
+
+# Step 13: Display Results
+print("\n========== PERFORMANCE ==========")
+print("Accuracy  :", round(accuracy * 100, 2), "%")
+print("Error Rate:", round(error_rate * 100, 2), "%")
+print("Precision :", round(precision, 4))
+print("Recall    :", round(recall, 4))
+
+# Step 14: Plot Confusion Matrix
+plt.figure(figsize=(6, 4))
+
+sns.heatmap(
+    cm,
+    annot=True,
+    fmt="d",
+    cmap="Blues",
+    xticklabels=["No Diabetes", "Diabetes"],
+    yticklabels=["No Diabetes", "Diabetes"]
+)
+
+plt.xlabel("Predicted")
+plt.ylabel("Actual")
+plt.title("KNN Confusion Matrix")
+plt.show()
